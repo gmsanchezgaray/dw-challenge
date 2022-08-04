@@ -24,7 +24,7 @@ export const DataProvider = ({ children }) => {
     getAllProducts()
       .then((resp) => {
         //Realizo un nuevo re mapeo de data
-        const newArray = resp.planes.map((element) => {
+        const newArray = resp.response.planes.map((element) => {
           return element.periodos.map((ele) => {
             return {
               ...ele,
@@ -33,7 +33,7 @@ export const DataProvider = ({ children }) => {
             };
           });
         });
-        //Para setear los productos de la lista con la misma estructura de la lista de cart
+        //Para setear los productos de la lista con la misma estructura de la lista de los productos del carrito
         // Para que luego puedo utilizar el mismo componente de List, renderizando los items del carro o para agregar
         setProducts([].concat.apply([], newArray));
         setItemsToShow([].concat.apply([], newArray));
@@ -42,8 +42,8 @@ export const DataProvider = ({ children }) => {
       .finally(() => setLoading(false));
     getCartList()
       .then((resp) => {
-        if (resp) {
-          setCart(resp);
+        if (resp.response) {
+          setCart(resp.response);
         }
       })
       .catch((err) => console.error(`Hubo un error => ${err}`))
@@ -52,15 +52,14 @@ export const DataProvider = ({ children }) => {
 
   /**
    * Funcion para agregar un producto al carro.
-   *
-   * Para poder realizar la llamada y para actulizar el carro, tuve que abrir las
-   * herramientas de desarrollo y tildar en la opcion "Limpiar Caché", ya que la data que traia, siempre estaba desactulizada
-   * a medida que realizaba POST o un DELETE.
    */
   const addProductTotheCart = (plan, periodo, nombre) => {
     addProductAPI(plan, periodo)
       .then(() => {
-        getCartList().then((resp) => setCart(resp));
+        getCartList().then((resp) => {
+          console.log(resp);
+          setCart(resp.response);
+        });
         setDataToast({
           message: `Se agregó ${nombre} - Periodo ${periodo}`,
           isOpened: true,
@@ -79,7 +78,7 @@ export const DataProvider = ({ children }) => {
    *
    * En el mismo me aparecio el mismo problema de CORS. Con la diferencia que al final
    * de la peticion, realizaba la llamada al endpoint. Para resolverlo utilice finally() para que actualice la data del carro,
-   * siempre y cuando la respuesta no fuera undefined.
+   * siempre y cuando la respuesta tuviera un valor.
    */
   const removeProductFromCart = (index, nombre, periodo) => {
     removeProductAPI(index)
@@ -87,7 +86,7 @@ export const DataProvider = ({ children }) => {
       .catch((err) => console.warn(err))
       .finally(() =>
         getCartList().then((res) => {
-          res === undefined ? setCart([]) : setCart(res);
+          !res.response ? setCart([]) : setCart(res.response);
         })
       );
     setDataToast({
